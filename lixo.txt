@@ -1,0 +1,424 @@
+#include <vector>
+#include <algorithm>
+#include <math.h>
+#include <stdlib.h>
+#include <fstream>
+#include "PrPixelClInvoker.h"
+//#include "MyPrPixelTools.h"
+//#include "Structs.h"
+
+
+using namespace std;
+using namespace LHCb;
+
+const int INITIAL_STATUS = 1;
+const int DIFFERENCE_SENSOR = 3;
+const float BREAKING_ANGLE = 0.005;
+//const float BREAKING_ANGLE = 1.5708;
+const float ACCEPTANCE_ANGLE = 0.1;
+int no_segments = 0;
+
+
+ofstream segFile("seg.txt");
+ofstream hitsFile("hits.txt");
+ofstream sensorFile("sensor.txt");
+ofstream hitsf("hitst.txt");
+ofstream segStatus("segStatus.txt");
+ofstream countSeg("countSeg.txt");
+ofstream countHits("countHits.txt");
+ofstream segVizinhos("segVizinhos.txt");
+ofstream angulo("angulo.txt");
+ofstream trackFile("tracks.txt");
+
+PrPixelHit takeHit(int id_hit, vector<vector<PrPixelHit>> hits);
+
+//================== FUNCTIONS FOR PRINT ON FILE ====================
+
+void printHitFile(vector<PrPixelHit> hits){
+	for(int i = 0; i < hits.size(); i++) hitsFile<<  "(" << hits[i].x() << ", " << hits[i].y() << ", " << hits[i].z() << " )" << endl;
+}
+
+//print hit on a file
+void printHit(PrPixelHit hit){
+	segFile << "(" << hit.x() << ", " << hit.y() << ", "<< hit.z() << " )" << endl;
+}
+
+
+//print hits with new status
+void printSegStatus(PrPixelHit hit){
+	segStatus <<  "(" << hit.x() << ", " << hit.y() << ", "<< hit.z() << " )" << endl;
+}
+
+
+
+
+
+void printTrack(TrackS track, int i){
+	vector<PrPixelHit> hits = track.getHits();
+	trackFile << "TrackS " << i << ": " << endl;
+	for(int i = 0; i < hits.size(); i++){
+		trackFile <<  "(" << hits[i].x() << ", " << hits[i].y() << ", "<< hits[i].z() << " )" << endl;
+	}
+	TrackSegment aux = track.getLastSeg();
+	hits = aux.getTrackSegment();
+	for(int i = 0; i < hits.size(); i++){
+		trackFile <<  "(" << hits[i].x() << ", " << hits[i].y() << ", "<< hits[i].z() << " )" << endl;
+	}
+	trackFile << endl;
+}
+
+
+
+//========================== END ======================================================
+
+//make segments
+vector<TrackSegment> makeSimpleSegment(vector<PrPixelHit> nextHits, vector<PrPixelHit> currentHits){
+	vector<TrackSegment> tSegment;
+	for(int id_current = 0; id_current < (int) currentHits.size(); id_current++){
+		float x_zero = currentHits[id_current].x();
+		float y_zero = currentHits[id_current].y();
+		float z_zero = currentHits[id_current].z();
+		for(int id_next = 0; id_next < (int) nextHits.size(); id_next++){
+			float x_one = nextHits[id_next].x();
+			float y_one = nextHits[id_next].y();
+			float z_one = nextHits[id_next].z();
+			float tx = (x_one - x_zero)/(z_one - z_zero);
+			float ty = (y_one - y_zero)/(z_one - z_zero);
+			//see the angle between the two hits
+			if(sqrt(tx*tx+ty*ty) <= ACCEPTANCE_ANGLE){
+                                     	vector<PrPixelHit> tmp;
+				//make segment object
+				tmp.push_back(currentHits[id_current]);
+				tmp.push_back(nextHits[id_next]);
+				TrackSegment aux (tmp, INITIAL_STATUS, tx, ty);
+				//print the segment on file
+				printHit(currentHits[id_current]);
+				printHit(nextHits[id_next]);
+				segFile << endl;
+				//count the segment
+				//no_segments++;
+				tSegment.push_back(aux);
+				tmp.clear();
+
+			}
+		}
+	}
+	//segFile << no_segments << endl;
+  return tSegment;
+}
+
+
+
+//compare if one hits is used
+bool compareHitUsed(PrPixelHit hit_one){
+	return !(hit_one.isUsed());
+}
+
+//compare if two hits are common
+bool compareHits(PrPixelHit one, PrPixelHit two){
+	if (one.n_id() == two.n_id()) return true;
+	//if ((one.x() == two.x()) && (one.y() == two.y()) && (one.z() == two.z())) return true;
+	return false;
+}
+
+//compare if two hits are common
+bool compareHits(int one, int two){
+	if (one == two) return true;
+	//if ((one.x() == two.x()) && (one.y() == two.y()) && (one.z() == two.z())) return true;
+	return false;
+}
+
+
+//calculate angle between two segments
+float calculateAngle(float tx_cur, float ty_cur, float tx_next, float ty_next){
+	float difference_tx = (tx_next - tx_cur);
+	float difference_ty = (ty_next - ty_cur);
+	return sqrt(difference_tx*difference_tx + difference_ty*difference_ty);
+}
+
+//test if the angle between two segments are ok
+bool compareBreakingAngle(float angle){
+	if(angle <= BREAKING_ANGLE) return true;
+	return false;
+}
+
+//compare if two segments can be neighbors seeing the status
+bool compareStatus(int status_one, int status_two){
+	if(status_two == (status_one-1)) return true;
+	return false;
+}
+
+//forward process
+void forwardProcess(vector<TrackSegment>& currentSeg, vector<TrackSegment>& nextSeg, vector<vector<PrPixelHit>> hits){
+	for(int id_current = 0; id_current < (int) currentSeg.size(); id_current++){
+		//take the tx and ty of the segments
+		float tx_cur = currentSeg[id_current].getTx();
+		float ty_cur = currentSeg[id_current].getTy();
+		//take the first hit of the segment on currentSeg
+		PrPixelHit hit_cur = currentSeg[id_current].getSecondHit();
+		//PrPixelHit hit_cur = takeHit(hit_cur_id, hits);
+		for(int id_next = 0; id_next < (int) nextSeg.size(); id_next++){
+			//take the tx and ty of the segments
+			TrackSegment tmp_seg = nextSeg[id_next];
+			float tx_next = tmp_seg.getTx();
+			float ty_next = tmp_seg.getTy();
+			//take the first hit of the segment on nextSeg
+			//vector<PrPixelHit> tmpNext = nextSeg[id_next].getTrackSegment();
+			PrPixelHit hit_next = nextSeg[id_next].getFirstHit();
+			//PrPixelHit hit_next = takeHit(hit_next_id, hits);
+                	             if (!compareHits(hit_cur, hit_next)) continue;
+			//calculate the breaking angle and verify if the segments has one common hit
+			float angle = calculateAngle(tx_cur, ty_cur, tx_next, ty_next);
+			//verify if the angle and the hit it's ok
+			if(compareBreakingAngle(angle)){
+				//increase the status
+				//if two segments has the same continuation, the preference is for the segment with greater status
+				if(currentSeg[id_current].getStatus()+1 > nextSeg[id_next].getStatus()){
+					nextSeg[id_next].setStatus(currentSeg[id_current].getStatus()+1);
+					printSegStatus(currentSeg[id_current].getFirstHit());
+					printSegStatus(currentSeg[id_current].getSecondHit());
+					printSegStatus(nextSeg[id_next].getFirstHit());
+					printSegStatus(nextSeg[id_next].getSecondHit());
+					segStatus << "status 1: " << currentSeg[id_current].getStatus() << endl;
+					segStatus << "status 2: " << nextSeg[id_next].getStatus() << endl;
+				}
+			/*	printTrackSegment(currentSeg[id_current]);
+				printTrackSegment(nextSeg[id_next]);
+				segStatus << angle << endl;
+				segStatus << endl; */
+			}
+		}
+	}
+}
+
+
+
+//escolhe o menor ângulo e retorna o seu índice
+int chooseBestAngle(vector<TrackS> trackAux){
+	float angle = trackAux[0].getLastAngle();
+	int indice = 0;
+	for(int iangle = 1; iangle < (int) trackAux.size(); iangle++){
+		if(trackAux[iangle].getLastAngle() < angle){
+			angle = trackAux[iangle].getLastAngle();
+			indice = iangle;
+		}
+	}
+	return indice;
+}
+
+//test if two segments are neighbors cells and your hits is not used
+bool testSegment(TrackSegment one, TrackSegment two, vector<vector<PrPixelHit>> hits){
+	PrPixelHit hit_one =  one.getFirstHit();
+	PrPixelHit hit_two = two.getSecondHit();
+	bool  testHits = compareHits(hit_one, hit_two);
+	//bool testHit_one = compareHitUsed(hit_one);
+	//bool testHit_two = compareHitUsed(hit_two);
+	bool seg_status = compareStatus(one.getStatus(), two.getStatus());
+	//calculate angle
+	float angle = calculateAngle(one.getTx(), one.getTy(), two.getTx(), two.getTy());
+	bool breakingAngle = compareBreakingAngle(angle);
+	return (breakingAngle && testHits && seg_status);//  && testHit_one && testHit_two);
+}
+
+//make the combination track with segments
+vector<TrackS> combinationTrack(vector<vector<TrackSegment>> tSegment, TrackS &track, int sensor_id, vector<vector<PrPixelHit>> hits){
+	vector<TrackS> tracks;
+	vector<TrackSegment> segments = tSegment[sensor_id];
+	//take the last segment
+	TrackSegment aux = track.getLastSeg();
+	float angle;
+
+
+	TrackS aux_track;
+	int count = 0;
+
+	for(int iseg = 0; iseg < (int) segments.size(); iseg++){
+
+		if(testSegment(aux, segments[iseg], hits)){
+			//calcula o ângulo entre os dois últimos segmentos e guarda na track
+			angle = calculateAngle(aux.getTx(), aux.getTy(), segments[iseg].getTx(), segments[iseg].getTy());
+			aux_track = track;
+			aux_track.setLastSeg(segments[iseg], aux_track);
+			aux_track.setLastAngle(angle);
+			tracks.push_back(aux_track);
+			count++;
+		}
+	}
+
+	if(count == 0) tracks.push_back(track);
+	return tracks;
+}
+
+//faz track
+void makeTrack(vector<vector<TrackSegment>> tSegment, TrackS &track, int sensor_id, vector<vector<PrPixelHit>> hits){
+	TrackSegment aux;
+	int indice = 0;
+	int id = sensor_id;
+
+	for(; id >= 0; id = id-2){
+		vector<TrackS> trackAux = combinationTrack(tSegment, track, id, hits);
+		indice = chooseBestAngle(trackAux);
+		track = trackAux[indice];
+		//track.setLastSeg(trackAux[indice], track);
+	}
+}
+
+
+//backward process
+void backwardProcess(vector<vector<TrackSegment>> &tSegment, vector<TrackS> &tracks, vector<vector<PrPixelHit>> hits){
+	int i = 1;
+	for(int isen =  tSegment.size()-1; isen >= 0; isen--){
+		vector<TrackSegment> currentSensor = tSegment[isen];
+		for(int iseg = 0; iseg < (int) currentSensor.size(); iseg++){
+			TrackS track(currentSensor[iseg]);
+			//make track
+			makeTrack(tSegment, track, isen-2, hits);
+
+
+			//setUsedTrack(tSegment, auxTrack[id], id_sensor);
+			vector<PrPixelHit> aux = track.getHits();
+			if(aux.size() <= 1) continue;
+			printTrack(track, i); i++;
+			tracks.push_back(track);
+			//return;
+		}
+	}
+}
+
+
+
+DECLARE_TOOL_FACTORY(PrPixelClInvoker)
+
+/**
+ * Run a single event on an OpenCL compatible device
+ */
+void PrPixelClInvoker::clPixelSolve(
+  const vector<uint8_t>& input,
+	vector<uint8_t>& output) {
+
+	//variable declarations
+	vector<float> sensors; //vector to all sensors
+	vector<vector<PrPixelHit>> hits; //vector to all hits
+	vector<vector<TrackSegment>> tSegment; //vector for all segments
+	vector<TrackS> tracks; //vector to all formed tracks
+	int no_segments = 0;
+
+	int status[35];
+
+
+
+
+
+	//make segments
+	for(unsigned isen = 0; isen < no_sensors-2; isen++){
+		vector<TrackSegment> tmpSeg = makeSimpleSegment(hits[isen+2], hits[isen]);
+		tSegment.push_back(tmpSeg);
+	}
+
+
+	//count the total of segments
+	int contSeg = 0;
+	for(int i = 0; i <  (int) tSegment.size(); i++){
+		contSeg = contSeg+tSegment[i].size();
+	}
+
+//	countSeg << contSeg << endl;
+//	segFile << contSeg << endl;
+//	segFile << no_hits << endl;
+
+
+	int i = 0;
+	//increase the status
+	for(int isen = 0; isen < (int) tSegment.size()-2; isen++){
+		//std::cout << tSegment[isen].size() << std::endl;
+		forwardProcess(tSegment[isen], tSegment[isen+2], hits);
+	}
+
+//===================================================
+/*	for(int i = 0; i < 35; i++) status[i] = 0;
+
+	for(int i = 0; i < tSegment.size(); i++){
+		vector<TrackSegment> aux = tSegment[i];
+		for(int j = 0; j < aux.size(); j++){
+			int id = aux[j].getStatus();
+			status[id]++;
+		}
+	}
+
+	for(int i = 0; i < 35; i++){
+		segStatus << "estado " << i << ": " << status[i] << endl;
+	} */
+//===================================================
+
+	for(int i = 0; i < tSegment.size(); i++){
+		countSeg << "sensor " << i << ": " << endl;
+
+		for(int i = 0; i < 26; i++) status[i] = 0;
+
+		for(int j = 0; j < tSegment[i].size(); j++){
+			status[tSegment[i][j].getStatus()] ++;
+		}
+
+		for(int i = 0; i < 26; i++){
+			if(status[i] != 0) countSeg << "estado " << i << ": " << status[i] << endl;
+		}
+		countSeg << endl;
+	}
+
+
+
+	//backward process
+	backwardProcess(tSegment, tracks, hits);
+
+//====================================================
+	//pega a quantidade de tracks com apenas 3 hits
+/*	int count = 0;
+	for(int i = 0; i < tracks.size(); i++){
+		vector<PrPixelHit> aux_hits = tracks[i].getHits();
+		TrackSegment track_aux = tracks[i].getLastSeg();
+		vector<PrPixelHit> seg_aux = track_aux.getTrackSegment();
+
+		if((aux_hits.size() + seg_aux.size()) <= 3) count++;
+
+	}
+
+	countSeg << "quantidade de tracks com apenas 3 hits: " << count << endl;
+	countSeg << "porcentagem de tracks com apenas 3 hits: " << (float) (100*count)/tracks.size() << "%" << endl;*/
+
+   /// Location of output container
+  std::string m_outputLocation = LHCb::TrackLocation::Velo;
+	cout << "numero de tracks: "  << tracks.size() << endl;
+  declareProperty("OutputTracksName", m_outputLocation = LHCb::TrackLocation::Velo);
+
+	LHCb::Tracks *outputTracks = new LHCb::Tracks();
+	//LHCb::Tracks* m_outputLocation = getIfExists<LHCb::Tracks>(LHCb::TrackLocation::Velo);
+	//put(outputTracks, LHCb::TrackLocation::Velo);
+  put(outputTracks, m_outputLocation);
+
+
+	cout << "estou aqui :) " << endl;
+
+	unsigned int key = 0;
+	cout << "LHCb::TrackLocation::Velo: "  << LHCb::TrackLocation::Velo << endl;
+  	for (int trackno=0; trackno< tracks.size(); ++trackno) {
+
+		// Create a new LHCb track.
+    LHCb::Track *newTrack = new LHCb::Track(key++);
+    newTrack->setType(LHCb::Track::Velo);
+    newTrack->setHistory(LHCb::Track::PatFastVelo);
+    newTrack->setPatRecStatus(LHCb::Track::PatRecIDs);
+
+		vector<PrPixelHit> hit = tracks[trackno].getHits();
+		for (unsigned int h=0; h < hit.size(); ++h) {
+      newTrack->addToLhcbIDs(hit[h].id());
+    }
+
+		// Set the chi2/dof
+  //  newTrack->setNDoF(2 * (hit.size() - 2));
+    // Add the LHCb track to the list.
+    outputTracks->insert(newTrack);
+
+	}
+
+
+}
