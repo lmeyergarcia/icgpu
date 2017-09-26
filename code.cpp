@@ -1,3 +1,8 @@
+/*class that define the main method
+ *  @author Leticia Freire
+ */
+
+
 #include <stdio.h>
 #include <iostream>
 #include <fstream>

@@ -1,3 +1,7 @@
+/* class to make the tracking
+ *  @author Leticia Freire
+ */
+
 #include <fstream>
 #include <iostream>
 #include <math.h>

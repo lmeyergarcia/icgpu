@@ -1,3 +1,7 @@
+/* structs to be used in the code
+ *  @author Leticia Freire
+ */
+
 #include <vector>
 #include <iostream>
 #include "PrPixelHit.h"

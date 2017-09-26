@@ -1,3 +1,7 @@
+/*class to process data
+ *  @author Leticia Freire
+ */
+
 #include <fstream>
 #include <iostream>
 #include <json/json.h>
