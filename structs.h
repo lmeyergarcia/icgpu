@@ -1,4 +1,5 @@
 /* structs to be used in the code
+ *
  *  @author Leticia Freire
  */
 

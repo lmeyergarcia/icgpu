@@ -1,4 +1,5 @@
 /*class to process data
+ *
  *  @author Leticia Freire
  */
 

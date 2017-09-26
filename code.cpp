@@ -1,4 +1,5 @@
 /*class that define the main method
+ *
  *  @author Leticia Freire
  */
 
