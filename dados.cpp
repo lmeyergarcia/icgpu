@@ -87,7 +87,8 @@ void DataFile::prepareResults(){
 	for(int i = 0; i < id_results.size(); i++){
 		vector<unsigned int> aux = id_results[i];
 		for(int j = 0; j < aux.size(); j++)
-			dataFile << id_results[i][j] << endl;
+			dataFile << id_results[i][j] << " ";
+		dataFile << endl;
 	}
 
 	/*closing file*/
@@ -124,29 +125,42 @@ void DataFile::compareTracks(vector<TrackS> tracks){
 						j++; hit--;
 						id = hits[hit].id();
 					}
+					// cout << good << endl;
 					if(good > 0){
+						cout << good << endl;
 						trackUsada = 1;
 						float goodPer = (float) good/id_results[i].size();
 						// cout << goodPer << endl;
 						if(goodPer >= 0.6){
 							goodTracks++;
 							// cout << goodPer << endl;
+							goodTrack << goodTracks << ":";
 							for(int i = hits.size()-1; i>= 0; i--) 
 								goodTrack << hits[i].id() << ", ";
 							goodTrack << endl;
 						}  
 						else{
+							cout << goodPer << ", " << fakeTracks << endl;
 							fakeTracks++;
+							fakeTrack << fakeTracks << ":";
 							for(int i = hits.size()-1; i>= 0; i--) 
 								fakeTrack << hits[i].id() << ", ";
 							fakeTrack << endl;
 						}
 						break;
 					}
+					
 					j++;
 				}
+				if(trackUsada) break;
 			}
-			if(trackUsada) break;
+			if(!trackUsada){
+				// cout << goodPer << ", " << fakeTracks << endl;
+				fakeTracks++;
+				for(int i = hits.size()-1; i>= 0; i--) 
+					fakeTrack << hits[i].id() << ", ";
+				fakeTrack << endl;
+			}
 			hit--;
 		}
 	}
