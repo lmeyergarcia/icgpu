@@ -1,3 +1,9 @@
+'''
+   get some info about the computer
+   and call the make
+   @author Leticia Freire
+'''
+
 import platform
 import cpuinfo
 import subprocess
