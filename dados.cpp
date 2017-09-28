@@ -127,7 +127,7 @@ void DataFile::compareTracks(vector<TrackS> tracks){
 					}
 					// cout << good << endl;
 					if(good > 0){
-						cout << good << endl;
+						// cout << good << endl;
 						trackUsada = 1;
 						float goodPer = (float) good/id_results[i].size();
 						// cout << goodPer << endl;
@@ -140,7 +140,7 @@ void DataFile::compareTracks(vector<TrackS> tracks){
 							goodTrack << endl;
 						}  
 						else{
-							cout << goodPer << ", " << fakeTracks << endl;
+							// cout << goodPer << ", " << fakeTracks << endl;
 							fakeTracks++;
 							fakeTrack << fakeTracks << ":";
 							for(int i = hits.size()-1; i>= 0; i--) 
@@ -153,13 +153,6 @@ void DataFile::compareTracks(vector<TrackS> tracks){
 					j++;
 				}
 				if(trackUsada) break;
-			}
-			if(!trackUsada){
-				// cout << goodPer << ", " << fakeTracks << endl;
-				fakeTracks++;
-				for(int i = hits.size()-1; i>= 0; i--) 
-					fakeTrack << hits[i].id() << ", ";
-				fakeTrack << endl;
 			}
 			hit--;
 		}
