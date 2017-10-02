@@ -1,8 +1,3 @@
-/* class to make the tracking
- *
- *  @author Leticia Freire
- */
-
 #include <fstream>
 #include <iostream>
 #include <math.h>
@@ -18,7 +13,7 @@ const int INITIAL_STATUS = 1;
 const int DIFFERENCE_SENSOR = 3;
 const float BREAKING_ANGLE = 0.005;
 //const float BREAKING_ANGLE = 1.5708;
-const float ACCEPTANCE_ANGLE = 0.1;
+const float ACCEPTANCE_ANGLE = 900;
 
 class Tracking{
   public:
@@ -35,6 +30,7 @@ class Tracking{
     bool compareStatus(int status_one, int status_two);
     int chooseBestAngle(vector<TrackS> trackAux);
     vector<TrackS> getTracks();
+    vector<vector<TrackSegment> > getSimpleSegments();
   private:
     vector<vector<TrackSegment> > tSegment;
     vector<TrackS> tracks;

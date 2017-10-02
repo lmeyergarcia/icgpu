@@ -1,8 +1,3 @@
-/* structs to be used in the code
- *
- *  @author Leticia Freire
- */
-
 #include <vector>
 #include <iostream>
 #include "PrPixelHit.h"
@@ -34,7 +29,7 @@ class TrackSegment{
 				cout << "x: " << trackSegment[i].x() << " y: " << trackSegment[i].y() << " z: " << trackSegment[i].z() << endl;
 		} */
 
-		float getTx(){ return tx;}
+		float getTx(){return tx;}
 
 		void setTx(float _tx){tx = _tx;}
 
@@ -42,13 +37,23 @@ class TrackSegment{
 
 		void setTy(float _ty){ty = _ty;}
 
+		float getX_1000(){return x_1000;}
+
+		void setX_1000(float _x_1000){x_1000 = _x_1000;}
+
+		float getY_1000(){return y_1000;}
+
+		void setY_1000(float _y_1000){y_1000 = _y_1000;}
+
 		TrackSegment(){}
 
-		TrackSegment(vector<PrPixelHit> _trackSegment, int _status, float _tx, float _ty){
+		TrackSegment(vector<PrPixelHit> _trackSegment, int _status, float _tx, float _ty, float _x_1000, float _y_1000){
 			trackSegment = _trackSegment;
 			status = _status;
 			tx = _tx;
 			ty = _ty;
+			x_1000 = _x_1000;
+			y_1000 = _y_1000;
 		}
 
 
@@ -57,6 +62,8 @@ class TrackSegment{
 		int status;
 		float tx;
 		float ty;
+		float x_1000;
+		float y_1000;
 };
 
 

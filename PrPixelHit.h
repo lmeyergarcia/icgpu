@@ -63,11 +63,11 @@ class PrPixelHit {
   }
 
  private:
-  /// Global x position
+  /// Global x position in milimeters
   float m_x;
-  /// Global y position
+  /// Global y position in milimeters
   float m_y;
-  /// Global z position
+  /// Global z position in milimeters
   float m_z;
   /// Weight (1 / error) in X
   float m_wxerr;

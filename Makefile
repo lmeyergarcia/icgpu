@@ -3,9 +3,10 @@ all: saida
 saida: dados.o saida.o tracking.o
 	g++ -o saida tracking.o dados.o saida.o  -I/usr/include/jsoncpp -ljsoncpp
 saida.o: code.cpp dados.h tracking.h
-	g++ -o saida.o -c code.cpp  -I/usr/include/jsoncpp -ljsoncpp
+	g++ -o saida.o -c code.cpp  -I/usr/include/jsoncpp -ljsoncpp -std=c++0x
+
 tracking.o: tracking.cpp
-	g++ -o tracking.o -c tracking.cpp
+	g++ -o tracking.o -c tracking.cpp -I/usr/include/jsoncpp -ljsoncpp
 dados.o: dados.cpp
 	g++ -o dados.o -c dados.cpp -I/usr/include/jsoncpp -ljsoncpp
 	#g++ -I  /usr/include/jsoncpp/ dados.cpp -ljsoncpp

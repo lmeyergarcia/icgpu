@@ -1,8 +1,3 @@
-/* class to make the tracking
- *
- *  @author Leticia Freire
- */
-
 #include "tracking.h"
 
 using namespace std;
@@ -109,15 +104,19 @@ vector<TrackSegment> Tracking::makeSimpleSegment(vector<PrPixelHit> nextHits, ve
 			float x_one = nextHits[id_next].x();
 			float y_one = nextHits[id_next].y();
 			float z_one = nextHits[id_next].z();
-			float tx = (x_one - x_zero)/(z_one - z_zero);
-			float ty = (y_one - y_zero)/(z_one - z_zero);
+			float tx = (x_one - x_zero)/(z_one - z_zero); // x = bx + tx*z
+			float ty = (y_one - y_zero)/(z_one - z_zero); // y = by + ty*z
+			float bx = x_zero - tx*z_zero;
+			float by = y_zero - ty*z_zero;
+			float x_1000 = bx + tx*1000;
+			float y_1000 = by + ty*1000;
 			//see the angle between the two hits
-			if(sqrt(tx*tx+ty*ty) <= ACCEPTANCE_ANGLE){
+			if(true  /*sqrt(tx*tx+ty*ty) <= ACCEPTANCE_ANGLE*/){
                                      	vector<PrPixelHit> tmp;
 				//make segment object
 				tmp.push_back(currentHits[id_current]);
 				tmp.push_back(nextHits[id_next]);
-				TrackSegment aux (tmp, INITIAL_STATUS, tx, ty);
+				TrackSegment aux (tmp, INITIAL_STATUS, tx, ty, x_1000, y_1000);
 				//print the segment on file
 				//printHit(currentHits[id_current]);
 				//printHit(nextHits[id_next]);
@@ -206,7 +205,7 @@ void Tracking::makeTracking(DataFile data){
 		vector<TrackSegment> tmpSeg = makeSimpleSegment(hits[isen+2], hits[isen]);
 		tSegment.push_back(tmpSeg);
 	}
-
+    return; //Murilo TODO
   //count the total of segments
 	int contSeg = 0;
 	for(int i = 0; i <  (int) tSegment.size(); i++){
@@ -228,3 +227,5 @@ void Tracking::makeTracking(DataFile data){
 }
 
 vector<TrackS> Tracking::getTracks() {return tracks;}
+
+vector<vector<TrackSegment> > Tracking::getSimpleSegments() {return tSegment;}

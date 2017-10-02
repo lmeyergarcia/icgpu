@@ -1,8 +1,3 @@
-/*class to process data
- *
- *  @author Leticia Freire
- */
-
 #include <fstream>
 #include <iostream>
 #include "dados.h"
@@ -78,17 +73,18 @@ void DataFile::prepareResults(){
 	for(int particle = 0; particle < particles.size(); particle++){
 		vector<unsigned int> aux;
 		const Json::Value& ids = particles[particle][15];
+		const Json::Value& il = particles[particle][15];
 		for(int id = 0; id < ids.size(); id++){
 			aux.push_back(ids[id].asUInt());
 		}
 		id_results.push_back(aux);
+		isLong.push_back(il);
 	}
 
 	for(int i = 0; i < id_results.size(); i++){
 		vector<unsigned int> aux = id_results[i];
 		for(int j = 0; j < aux.size(); j++)
-			dataFile << id_results[i][j] << " ";
-		dataFile << endl;
+			dataFile << id_results[i][j] << endl;
 	}
 
 	/*closing file*/
@@ -125,35 +121,29 @@ void DataFile::compareTracks(vector<TrackS> tracks){
 						j++; hit--;
 						id = hits[hit].id();
 					}
-					// cout << good << endl;
 					if(good > 0){
-						// cout << good << endl;
 						trackUsada = 1;
 						float goodPer = (float) good/id_results[i].size();
 						// cout << goodPer << endl;
 						if(goodPer >= 0.6){
 							goodTracks++;
 							// cout << goodPer << endl;
-							goodTrack << goodTracks << ":";
 							for(int i = hits.size()-1; i>= 0; i--) 
 								goodTrack << hits[i].id() << ", ";
 							goodTrack << endl;
 						}  
 						else{
-							// cout << goodPer << ", " << fakeTracks << endl;
 							fakeTracks++;
-							fakeTrack << fakeTracks << ":";
 							for(int i = hits.size()-1; i>= 0; i--) 
 								fakeTrack << hits[i].id() << ", ";
 							fakeTrack << endl;
 						}
 						break;
 					}
-					
 					j++;
 				}
-				if(trackUsada) break;
 			}
+			if(trackUsada) break;
 			hit--;
 		}
 	}
@@ -175,3 +165,4 @@ vector<int> DataFile::getNoHitsSensor() {return no_hits_sensor;}
 vector<vector<PrPixelHit> > DataFile::getHits() {return hits;}
 vector<PrPixelHit> DataFile::getHitsSensor(int i) {return hits[i];}
 vector<vector<unsigned int> > DataFile::getResult() {return id_results;}
+vector<unsigned int> DataFile::getIsLong() {return isLong;}
